@@ -6,40 +6,51 @@ import { clsx } from "clsx";
 /**
  * Goal: Build out the main parts of our app
  *
- * Challenge: Update the keyboard when a letter is right
- * or wrong.
- *
- * Bonus: use the `clsx` package to easily add conditional
- * classNames to the keys of the keyboard. Check the docs
- * to learn how to use it 📖
+ * Challenge:
+ * 1. Create a variable `isGameOver` which evaluates to `true`
+ *    if the user has guessed incorrectly 8 times. Consider how
+ *    we might make this more dynamic if we were ever to add or
+ *    remove languages from the languages array.
+ * 2. Conditionally render the New Game button only if the game
+ *    is over.
  */
 
 export default function AssemblyEndgame() {
+	// State values
 	const [currentWord, setCurrentWord] = useState("react");
-
 	const [guessLetter, setGuessLetter] = useState([]);
-	console.log(guessLetter);
 
+	// Derive values
+	const wrongGuessCount = guessLetter.filter((letter) => !currentWord.includes(letter)).length;
+	const isGameWon = currentWord.split("").every((letter) => guessLetter.includes(letter));
+	const isGameLost = wrongGuessCount >= languages.length;
+	const isGameOver = isGameWon || isGameLost;
+
+	// Static values
 	const alphabet = "abcdefghijklmnopqrstuvwxyz";
 
-	function handleGuessLetter(letter) {
+	function addGuessLetter(letter) {
 		setGuessLetter((prevLetter) => (prevLetter.includes(letter) ? prevLetter : [...prevLetter, letter]));
 	}
-	const languageElements = languages.map((lang) => {
+
+	const languageElements = languages.map((lang, i) => {
+		const isLanguageLost = i < wrongGuessCount;
+		const className = clsx("chip", isLanguageLost && "lost");
+
 		const styles = {
 			backgroundColor: lang.backgroundColor,
 			color: lang.color,
 		};
 
 		return (
-			<span className="chip" key={lang.name} style={styles}>
+			<span className={className} key={lang.name} style={styles}>
 				{lang.name}
 			</span>
 		);
 	});
 
-	const letterElements = currentWord.split("").map((word, index) => {
-		return <span key={index}>{word.toUpperCase()}</span>;
+	const letterElements = currentWord.split("").map((letter, index) => {
+		return <span key={index}>{guessLetter.includes(letter) ? letter.toUpperCase() : ""}</span>;
 	});
 
 	const keyboardElements = alphabet.split("").map((letter) => {
@@ -52,7 +63,7 @@ export default function AssemblyEndgame() {
 		});
 
 		return (
-			<button key={letter} className={className} onClick={() => handleGuessLetter(letter)}>
+			<button key={letter} className={className} onClick={() => addGuessLetter(letter)}>
 				{letter.toUpperCase()}
 			</button>
 		);
@@ -75,7 +86,7 @@ export default function AssemblyEndgame() {
 			<section className="word">{letterElements}</section>
 
 			<section className="keyboard">{keyboardElements}</section>
-			<button className="new-game">New Game</button>
+			{isGameOver && <button className="new-game">New Game</button>}
 		</main>
 	);
 }
