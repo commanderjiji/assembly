@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { languages } from "./languages";
+import { getFarewellText } from "./utils";
 
 import { clsx } from "clsx";
 
@@ -22,10 +23,14 @@ export default function AssemblyEndgame() {
 	const [guessLetter, setGuessLetter] = useState([]);
 
 	// Derive values
+	const numGuessesLeft = languages.length - 1;
 	const wrongGuessCount = guessLetter.filter((letter) => !currentWord.includes(letter)).length;
 	const isGameWon = currentWord.split("").every((letter) => guessLetter.includes(letter));
-	const isGameLost = wrongGuessCount >= languages.length;
+	const isGameLost = wrongGuessCount >= numGuessesLeft;
 	const isGameOver = isGameWon || isGameLost;
+
+	const lastGuessedLetter = guessLetter[guessLetter.length - 1];
+	const isLastGuessIncorrect = lastGuessedLetter && !currentWord.includes(lastGuessedLetter);
 
 	// Static values
 	const alphabet = "abcdefghijklmnopqrstuvwxyz";
@@ -64,7 +69,7 @@ export default function AssemblyEndgame() {
 		});
 
 		return (
-			<button key={letter} className={className} onClick={() => addGuessLetter(letter)}>
+			<button key={letter} className={className} onClick={() => addGuessLetter(letter)} disabled={isGameOver} aria-disabled={guessLetter.includes(letter)} aria-label={`Letter ${letter}`}>
 				{letter.toUpperCase()}
 			</button>
 		);
@@ -73,7 +78,33 @@ export default function AssemblyEndgame() {
 	const gameStatusClass = clsx("game-status", {
 		won: isGameWon,
 		lost: isGameLost,
+		farewell: !isGameOver && isLastGuessIncorrect,
 	});
+
+	function renderGameStatus() {
+		if (!isGameOver && isLastGuessIncorrect) {
+			return <p className="farewell-message">{getFarewellText(languages[wrongGuessCount - 1].name)}</p>;
+		}
+
+		if (isGameWon) {
+			return (
+				<>
+					<h2>You win!</h2>
+					<p>Well done! 🎉</p>
+				</>
+			);
+		}
+		if (isGameLost) {
+			return (
+				<>
+					<h2>Game over!</h2>
+					<p>You lose! Better start learning Assembly 😭</p>
+				</>
+			);
+		}
+
+		return null;
+	}
 
 	return (
 		<main>
@@ -82,19 +113,28 @@ export default function AssemblyEndgame() {
 				<p>Guess the word in under 8 attempts to keep the programming world safe from Assembly!</p>
 			</header>
 
-			<section
-				className={gameStatusClass}
-				style={{
-					visibility: isGameOver ? "" : "hidden",
-				}}
-			>
-				<h2>{isGameWon ? "You Win!" : "You Lost!"}</h2>
-				<p>{isGameWon ? "Well done!🎉" : "You lose! Better start learning Assembly 😭"}</p>
+			<section aria-live="polite" role="status" className={gameStatusClass}>
+				{renderGameStatus()}
 			</section>
 
 			<section className="language-chips">{languageElements}</section>
 
 			<section className="word">{letterElements}</section>
+
+			<section className="sr-only" aria-live="polite" role="status">
+				<p>
+					{currentWord.includes(lastGuessedLetter) ? `Correct! The letter ${lastGuessedLetter} is in the word.` : `Sorry, the letter ${lastGuessedLetter} is not in the word.`}
+					You have {numGuessesLeft} attempts left.
+				</p>
+
+				<p>
+					Current word:{" "}
+					{currentWord
+						.split("")
+						.map((letter) => (guessLetter.includes(letter) ? letter + "." : "blank."))
+						.join(" ")}
+				</p>
+			</section>
 
 			<section className="keyboard">{keyboardElements}</section>
 			{isGameOver && <button className="new-game">New Game</button>}
