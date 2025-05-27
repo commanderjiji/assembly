@@ -56,7 +56,14 @@ export default function AssemblyEndgame() {
 	});
 
 	const letterElements = currentWord.split("").map((letter, index) => {
-		return <span key={index}>{guessLetter.includes(letter) ? letter.toUpperCase() : ""}</span>;
+		const shouldRevealLetter = isGameLost || guessLetter.includes(letter);
+		const letterClassName = clsx(isGameLost && !guessLetter.includes(letter) && "missed-letter");
+
+		return (
+			<span key={index} className={letterClassName}>
+				{shouldRevealLetter ? letter.toUpperCase() : ""}
+			</span>
+		);
 	});
 
 	const keyboardElements = alphabet.split("").map((letter) => {
@@ -106,6 +113,11 @@ export default function AssemblyEndgame() {
 		return null;
 	}
 
+	function newGameButton() {
+		setCurrentWord(() => getRandomWord());
+		setGuessLetter([]);
+	}
+
 	return (
 		<main>
 			<header>
@@ -137,7 +149,11 @@ export default function AssemblyEndgame() {
 			</section>
 
 			<section className="keyboard">{keyboardElements}</section>
-			{isGameOver && <button className="new-game">New Game</button>}
+			{isGameOver && (
+				<button onClick={newGameButton} className="new-game">
+					New Game
+				</button>
+			)}
 		</main>
 	);
 }
